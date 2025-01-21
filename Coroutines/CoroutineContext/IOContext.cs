@@ -7,9 +7,9 @@ namespace Coroutines.CoroutineContext
 {
     public class IOContext : Dispatcher
     {
-        public override Task ExecuteAsync(Func<Task> task, CancellationToken cancellationToken)
+        public override async Task ExecuteAsync(Func<Task> task, CancellationToken cancellationToken)
         {
-            return Task.Factory.StartNew(
+            await Task.Factory.StartNew(
                 async () =>
                 {
                     try
@@ -25,6 +25,18 @@ namespace Coroutines.CoroutineContext
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default
             ).Unwrap();
+        }
+
+        public override async Task<T> ExecuteAsync<T>(Func<Task<T>> task, CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await task();
+            }
+            catch (Exception ex)
+            {
+                throw new CoroutineExecutionException("Error in IO-optimized context.", ex);
+            }
         }
     }
 }

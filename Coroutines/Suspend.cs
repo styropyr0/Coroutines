@@ -40,5 +40,29 @@ namespace Coroutines
                 throw new CoroutineExecutionException("Error during SuspendWith action.", ex);
             }
         }
+
+        public static async Task<T> Await<T>(Task<T> task)
+        {
+            try
+            {
+                return await task;
+            }
+            catch (Exception ex)
+            {
+                throw new CoroutineExecutionException("Error awaiting task.", ex);
+            }
+        }
+
+        public static async Task Await(Task task)
+        {
+            try
+            {
+                await task;
+            }
+            catch (Exception ex)
+            {
+                throw new CoroutineExecutionException("Error awaiting task.", ex);
+            }
+        }
     }
 }

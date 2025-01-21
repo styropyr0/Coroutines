@@ -15,40 +15,54 @@ namespace Coroutines.CoroutineContext
 
             if (_syncContext != null)
             {
-                try
+                _syncContext.Post(async _ =>
                 {
-                    _syncContext.Post(async _ =>
+                    try
                     {
-                        try
-                        {
-                            await task();
-                            taskCompletionSource.SetResult(true);
-                        }
-                        catch (Exception ex)
-                        {
-                            taskCompletionSource.SetException(new CoroutineExecutionException("Error in main thread context", ex));
-                        }
-                    }, null);
-                }
-                catch (Exception ex)
-                {
-                    taskCompletionSource.SetException(new CoroutineExecutionException("Failed to post task to main thread context.", ex));
-                }
+                        await task();
+                        taskCompletionSource.SetResult(true);
+                    }
+                    catch (Exception ex)
+                    {
+                        taskCompletionSource.SetException(new CoroutineExecutionException("Error in main thread context.", ex));
+                    }
+                }, null);
             }
             else
             {
-                try
-                {
-                    await task();
-                    taskCompletionSource.SetResult(true);
-                }
-                catch (Exception ex)
-                {
-                    taskCompletionSource.SetException(new CoroutineExecutionException("Error in default execution context.", ex));
-                }
+                await Task.Run(task, cancellationToken);
+                taskCompletionSource.SetResult(true);
             }
 
             await taskCompletionSource.Task;
+        }
+
+        public override async Task<T> ExecuteAsync<T>(Func<Task<T>> task, CancellationToken cancellationToken)
+        {
+            var taskCompletionSource = new TaskCompletionSource<T>();
+
+            if (_syncContext != null)
+            {
+                _syncContext.Post(async _ =>
+                {
+                    try
+                    {
+                        var result = await task();
+                        taskCompletionSource.SetResult(result);
+                    }
+                    catch (Exception ex)
+                    {
+                        taskCompletionSource.SetException(new CoroutineExecutionException("Error in main thread context.", ex));
+                    }
+                }, null);
+            }
+            else
+            {
+                var result = await task();
+                taskCompletionSource.SetResult(result);
+            }
+
+            return await taskCompletionSource.Task;
         }
     }
 }

@@ -7,19 +7,28 @@ namespace Coroutines.CoroutineContext
 {
     public class DefaultContext : Dispatcher
     {
-        public override Task ExecuteAsync(Func<Task> task, CancellationToken cancellationToken)
+        public override async Task ExecuteAsync(Func<Task> task, CancellationToken cancellationToken)
         {
-            return Task.Run(async () =>
+            try
             {
-                try
-                {
-                    await task();
-                }
-                catch (Exception ex)
-                {
-                    throw new CoroutineExecutionException("Error in default background context.", ex);
-                }
-            }, cancellationToken);
+                await task();
+            }
+            catch (Exception ex)
+            {
+                throw new CoroutineExecutionException("Error in default background context.", ex);
+            }
+        }
+
+        public override async Task<T> ExecuteAsync<T>(Func<Task<T>> task, CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await task();
+            }
+            catch (Exception ex)
+            {
+                throw new CoroutineExecutionException("Error in default background context.", ex);
+            }
         }
     }
 }

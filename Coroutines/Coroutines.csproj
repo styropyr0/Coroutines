@@ -9,7 +9,7 @@
 		<Company>Matrix LLC</Company>
 		<Description>A coroutine library inspired by Kotlin coroutines.</Description>
 		<PackageTags>coroutines;async;tasks;kotlin;dispatcher</PackageTags>
-		<RepositoryUrl>https://github.com/yourusername/CoroutineLibrary</RepositoryUrl>
+		<RepositoryUrl>https://github.com/styropyr0/Coroutines</RepositoryUrl>
 	</PropertyGroup>
 
 </Project>
