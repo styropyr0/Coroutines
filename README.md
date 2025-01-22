@@ -1,204 +1,315 @@
-# Coroutine Library
+# Coroutine Library - Detailed Documentation
 
-A C# coroutine library that simplifies asynchronous programming by enabling the management, coordination, and execution of multiple coroutines in parallel with structured exception handling, cancellation support, and flexible task management. Inspired by Kotlin coroutines, this library abstracts away complex task control flows, making it easier to work with concurrent tasks.
+## Overview
 
-## Features
+This Coroutine Library is a lightweight asynchronous task management system for C# inspired by Kotlin Coroutines. It provides a flexible framework to handle asynchronous tasks in a structured manner. It includes features like context switching, cancellation support, error handling, and custom dispatchers to handle different types of tasks.
 
-- Launch and manage coroutines of various types: `Action`, `Func<Task>`, `Func<T>`, `Action<T>`, and `Action<object>`.
-- Combine multiple coroutines and execute them in parallel.
-- Centralized exception handling for all coroutines.
-- Global cancellation control for all coroutines.
-- Support for both synchronous and asynchronous task execution.
-- A simple and clear API for managing complex workflows.
+### Features:
+- **Coroutine Scope**: Group and manage multiple coroutines with easy lifecycle management.
+- **Multiple Dispatchers**: Choose from different dispatchers optimized for different execution contexts (e.g., IO-bound tasks, main thread tasks).
+- **Cancellation Support**: Cancel all coroutines within a scope simultaneously, or cancel individual tasks.
+- **Flexible Context Handling**: Switch between various contexts (e.g., main thread, IO, unconfined) to execute coroutines efficiently.
+- **Error Handling**: Built-in exception handling to ensure safe execution of coroutines.
+- **Task Execution Control**: Explicit control over how and where coroutines run using custom dispatchers.
 
 ## Installation
 
-To use the Coroutine library in your project, you can either download the source code directly from GitHub or install it via NuGet (if available).
+### Prerequisites
+- .NET Core 3.1 or later
+- .NET Framework 4.7.2 or later
 
+### Adding the Library to Your Project
+
+1. Clone or download the repository:
+   ```bash
+   git clone https://github.com/yourusername/coroutines.git
+   ```
+2. Add the source files directly to your project, or compile the library into a `.dll` and reference it in your project.
+
+Alternatively, if you prefer to install via NuGet (if the package is made public):
 ```bash
 Install-Package CoroutineLibrary
 ```
 
-Or you can add the library as a submodule in your project.
+## Library Components
 
-## Usage
+### Core Classes and Components
 
-### Launch a Simple Coroutine
+#### `CoroutineScope`
+A **CoroutineScope** is used to manage coroutines. It ensures that coroutines are executed together and can be canceled or waited for completion. The scope acts as a container that handles the lifecycle of coroutines and ensures they are executed on a specific dispatcher.
 
-You can launch coroutines using the `GlobalScope.Launch` method. It supports several types of tasks.
-
-#### Launch an `Action` (No parameters, no return value)
+##### Constructor
 
 ```csharp
-public static async Task Main(string[] args)
-{
-    await GlobalScope.Launch(() => 
-    {
-        Console.WriteLine("Action coroutine executed");
-    });
-}
+public CoroutineScope(Dispatcher dispatcher)
 ```
 
-#### Launch a `Func<Task>` (Asynchronous task)
+- **dispatcher**: The dispatcher to run coroutines on (e.g., `Dispatcher.Default`, `Dispatcher.IOContext`).
+
+##### Methods
+
+- **`Launch`**:
+  Launches a coroutine within the scope.
+
+  ```csharp
+  public async Task Launch(Func<Task> coroutine)
+  ```
+
+  Example:
+  ```csharp
+  var scope = new CoroutineScope(Dispatcher.Default);
+  await scope.Launch(async () =>
+  {
+      await Task.Delay(1000);
+      Console.WriteLine("Coroutine completed.");
+  });
+  ```
+
+- **`WaitAllAsync`**:
+  Waits for all coroutines within the scope to complete.
+
+  ```csharp
+  public async Task WaitAllAsync()
+  ```
+
+- **`CancelAll`**:
+  Cancels all coroutines within the scope.
+
+  ```csharp
+  public void CancelAll()
+  ```
+
+---
+
+#### `CoroutineScopeWithCancellation`
+This class extends `CoroutineScope` and adds the ability to cancel all coroutines within the scope.
+
+##### Methods
+
+- **`Launch`**:
+  Same as in `CoroutineScope`, but with cancellation support. You can cancel all coroutines launched in this scope.
+
+  ```csharp
+  public override async Task Launch(Func<Task> coroutine)
+  ```
+
+- **`CancelAll`**:
+  Cancels all coroutines within this scope.
+
+  ```csharp
+  public void CancelAll()
+  ```
+
+---
+
+#### `Dispatcher`
+The `Dispatcher` class defines how and where coroutines are executed. There are different dispatcher types optimized for different use cases. A dispatcher determines the synchronization context of a coroutine and can execute it on the main thread, a background thread, or an unconfined context.
+
+##### Abstract Methods
+
+- **`ExecuteAsync`**:
+  Executes a coroutine asynchronously using the dispatcher context.
+
+  ```csharp
+  public abstract Task ExecuteAsync(Func<Task> task, CancellationToken cancellationToken)
+  ```
+
+- **`ExecuteAsync`** (with Result):
+  Executes an asynchronous task that returns a result.
+
+  ```csharp
+  public abstract Task<T> ExecuteAsync<T>(Func<Task<T>> task, CancellationToken cancellationToken)
+  ```
+
+##### Dispatcher Types
+
+1. **`DefaultContext`**: Executes tasks without any special synchronization context. Suitable for general-purpose tasks.
+2. **`IOContext`**: Optimized for IO-bound tasks (e.g., network or file operations).
+3. **`MainContext`**: Executes tasks on the main thread (typically useful for UI-based applications).
+4. **`UnconfinedContext`**: Executes tasks without any synchronization context, allowing tasks to run freely on any available thread.
+
+---
+
+### `CoroutineContextExtensions`
+This class provides extension methods to easily execute coroutines within a specified `Dispatcher` context.
+
+#### `WithContext`
+
+The `WithContext` method executes a coroutine within the specified dispatcher context.
 
 ```csharp
-public static async Task Main(string[] args)
-{
-    await GlobalScope.Launch(async () => 
-    {
-        await Task.Delay(1000);
-        Console.WriteLine("Async coroutine executed");
-    });
-}
+public static async Task WithContext(this Dispatcher dispatcher, Func<Task> block, CancellationToken cancellationToken = default)
 ```
 
-#### Launch a `Func<T>` (Returns a value)
-
 ```csharp
-public static async Task Main(string[] args)
-{
-    var result = await GlobalScope.Launch(() => 
-    {
-        return "Coroutine result";
-    });
-
-    Console.WriteLine(result);
-}
+public static async Task<T> WithContext<T>(this Dispatcher dispatcher, Func<Task<T>> block, CancellationToken cancellationToken = default)
 ```
 
-#### Launch a Coroutine with a Parameter (`Action<T>`)
+Example:
 
 ```csharp
-public static async Task Main(string[] args)
+await Dispatcher.IOContext.WithContext(async () =>
 {
-    await GlobalScope.Launch((int value) => 
-    {
-        Console.WriteLine($"Coroutine with parameter: {value}");
-    }, 42);
-}
+    await Task.Delay(1000);
+    Console.WriteLine("Executed in IO context.");
+});
 ```
 
-#### Launch a Coroutine with an Object Parameter (`Action<object>`)
+---
+
+### `CoroutineBuilder`
+This is a utility class that provides simpler methods for launching coroutines.
+
+#### Methods
+
+- **`Launch`**:
+  Launches a coroutine without worrying about the scope.
+
+  ```csharp
+  public static async Task Launch(Func<Task> block, Dispatcher dispatcher)
+  ```
+
+- **`CoroutineAsync`**:
+  Executes a coroutine that returns a result.
+
+  ```csharp
+  public static async Task<T> CoroutineAsync<T>(Func<Task<T>> block, Dispatcher dispatcher)
+  ```
+
+---
+
+## Example Usage
+
+### Basic Coroutine Execution
+
+You can launch a simple coroutine using the `CoroutineScope`:
 
 ```csharp
-public static async Task Main(string[] args)
+var scope = new CoroutineScope(Dispatcher.Default);
+
+await scope.Launch(async () =>
 {
-    await GlobalScope.Launch((object obj) => 
-    {
-        Console.WriteLine($"Coroutine with object parameter: {obj}");
-    }, "Hello World");
-}
+    await Task.Delay(1000);  // Simulating async task
+    Console.WriteLine("Coroutine finished.");
+});
 ```
 
-### Combine Multiple Coroutines
+### Coroutine with Cancellation Support
 
-You can also combine multiple coroutines and run them in parallel.
+Use `CoroutineScopeWithCancellation` to manage coroutines that can be canceled:
 
 ```csharp
-public static async Task Main(string[] args)
+var scope = new CoroutineScopeWithCancellation(Dispatcher.Default);
+
+await scope.Launch(async () =>
 {
-    await GlobalScope.Combine(new List<Action>
-    {
-        () => Console.WriteLine("Coroutine 1"),
-        () => Console.WriteLine("Coroutine 2"),
-        () => Console.WriteLine("Coroutine 3")
-    });
-}
+    await Task.Delay(1000);  // Simulate long-running task
+    Console.WriteLine("This won't print if canceled.");
+});
+
+// Cancel all coroutines after 500ms
+await Task.Delay(500);
+scope.CancelAll();
+Console.WriteLine("Coroutines were canceled.");
 ```
 
-### Cancellation
+### Custom Dispatcher Usage
 
-You can cancel all coroutines globally.
+You can use custom dispatchers for specific execution contexts:
 
 ```csharp
-public static async Task Main(string[] args)
+var ioContext = new IOContext();
+
+await ioContext.ExecuteAsync(async () =>
 {
-    var cancellationToken = new CancellationTokenSource();
-
-    // Launch some coroutines
-    await GlobalScope.Launch(async () => 
-    {
-        await Task.Delay(2000);
-        Console.WriteLine("Coroutine 1 completed");
-    }, cancellationToken.Token);
-
-    await GlobalScope.Launch(async () => 
-    {
-        await Task.Delay(3000);
-        Console.WriteLine("Coroutine 2 completed");
-    }, cancellationToken.Token);
-
-    // Cancel all coroutines
-    cancellationToken.Cancel();
-
-    // Wait for all tasks to complete
-    await GlobalScope.WaitAllAsync(cancellationToken.Token);
-}
+    await Task.Delay(1000);  // Simulate an IO-bound task
+    Console.WriteLine("Executed in IO context.");
+});
 ```
 
-### Error Handling
+### Error Handling in Coroutines
 
-Coroutines support global error handling. All uncaught exceptions will be forwarded to the `CoroutineExceptionHandler`.
-
-```csharp
-public static async Task Main(string[] args)
-{
-    await GlobalScope.Launch(async () => 
-    {
-        throw new Exception("An error occurred");
-    });
-}
-```
-
-You can implement custom error handling by creating your own `CoroutineExceptionHandler`.
+Any exceptions thrown within coroutines are caught and thrown as `CoroutineExecutionException`:
 
 ```csharp
-public class CustomCoroutineExceptionHandler : ICoroutineExceptionHandler
+await scope.Launch(async () =>
 {
-    public void Handle(Exception ex)
+    throw new Exception("Something went wrong.");
+}).ContinueWith(t =>
+{
+    if (t.Exception != null)
     {
-        Console.WriteLine($"Custom exception handler: {ex.Message}");
+        Console.WriteLine("Error: " + t.Exception.InnerException.Message);
     }
+});
+```
+
+### Multiple Coroutines in a Scope
+
+You can launch multiple coroutines in a single scope:
+
+```csharp
+var scope = new CoroutineScope(Dispatcher.Default);
+
+await scope.Launch(async () =>
+{
+    await Task.Delay(1000);
+    Console.WriteLine("First coroutine completed.");
+});
+
+await scope.Launch(async () =>
+{
+    await Task.Delay(2000);
+    Console.WriteLine("Second coroutine completed.");
+});
+
+await scope.WaitAllAsync();  // Wait for both coroutines to finish
+Console.WriteLine("All coroutines completed.");
+```
+
+---
+
+## Error Handling
+
+All coroutines are wrapped in try-catch blocks, so any unhandled exceptions will be captured and thrown as `CoroutineExecutionException`:
+
+```csharp
+try
+{
+    await someScope.Launch(async () =>
+    {
+        throw new InvalidOperationException("An error occurred.");
+    });
+}
+catch (CoroutineExecutionException ex)
+{
+    Console.WriteLine("Coroutine failed: " + ex.Message);
 }
 ```
 
-## API
+---
 
-### GlobalScope
+## Advanced Features
 
-The `GlobalScope` provides the main interface for launching and managing coroutines.
+### Combining Coroutines
 
-- `Launch(Func<Task> coroutine, Dispatcher dispatcher = null, CancellationToken cancellationToken = default)`
-- `Launch(Action coroutine, Dispatcher dispatcher = null, CancellationToken cancellationToken = default)`
-- `Launch(Func<T> coroutine, Dispatcher dispatcher = null, CancellationToken cancellationToken = default)`
-- `Combine(IEnumerable<Action> coroutines, Dispatcher dispatcher = null, CancellationToken cancellationToken = default)`
-- `Combine(IEnumerable<Func<T>> coroutines, Dispatcher dispatcher = null, CancellationToken cancellationToken = default)`
-- `WaitAllAsync(CancellationToken cancellationToken = default)`
-- `CancelAll()`
-- `DisposeAllAsync()`
+You can combine multiple coroutines into one:
 
-### CoroutineScope
+```csharp
+await scope.Launch(async () =>
+{
+    await Task.WhenAll(
+        Task.Delay(1000),
+        Task.Delay(2000)
+    );
+    Console.WriteLine("All tasks finished.");
+});
+```
 
-Manages individual coroutines and provides the ability to execute them with a specific dispatcher.
+---
 
-### Dispatcher
+### Conclusion
 
-A dispatcher is responsible for executing coroutines. You can create custom dispatchers or use the default dispatcher.
+This coroutine library provides a robust and flexible framework for managing asynchronous tasks in C#. With support for multiple dispatchers, cancellation, error handling, and scope management, it is a powerful tool for any application requiring efficient asynchronous task management.
 
-### CoroutineExceptionHandler
-
-Handles exceptions that occur during coroutine execution.
-
-## Advanced Topics
-
-### Combining Coroutines in Parallel
-
-You can combine multiple coroutines and execute them concurrently, making it easier to handle multiple asynchronous tasks at once.
-
-### Coroutine Context
-
-You can pass a specific dispatcher for executing coroutines, allowing you to control the thread or execution context in which the coroutine runs.
-
-## Conclusion
-
-The Coroutine Library provides a simple yet powerful way to manage coroutines in C#. It improves concurrency management, handles exceptions centrally, and provides a clean API for launching, combining, and synchronizing tasks in your applications.
+For advanced use cases or to contribute, please check the [source code](https://github.com/yourusername/coroutines).
