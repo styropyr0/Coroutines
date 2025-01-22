@@ -28,8 +28,13 @@ This Coroutine Library is a lightweight asynchronous task management system for 
 
 Alternatively, if you prefer to install via NuGet (if the package is made public):
 ```bash
-Install-Package CoroutinesForCS
+Install-Package CoroutinesForCS -Version 1.0.0
 ```
+or using .NET CLI
+```bash
+dotnet add package CoroutinesForCS --version 1.0.0
+```
+Available [here](https://www.nuget.org/packages/CoroutinesForCS).
 
 ## Library Components
 
