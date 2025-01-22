@@ -5,11 +5,13 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<Version>1.0.0</Version>
+		<PackageId>CoroutinesForCS</PackageId>
 		<Authors>Saurav Sajeev</Authors>
 		<Company>Matrix LLC</Company>
 		<Description>A coroutine library inspired by Kotlin coroutines.</Description>
 		<PackageTags>coroutines;async;tasks;kotlin;dispatcher</PackageTags>
 		<RepositoryUrl>https://github.com/styropyr0/Coroutines</RepositoryUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>
 
 </Project>
