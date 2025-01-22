@@ -7,52 +7,212 @@ using System.Threading.Tasks;
 
 namespace Coroutines
 {
+    /// <summary>
+    /// Provides global access to coroutine scopes and utilities for launching, combining, and managing coroutines.
+    /// </summary>
     public static class GlobalScope
     {
         private static readonly ConcurrentDictionary<Dispatcher, CoroutineScope> Scopes = new();
 
-        public static async Task Launch(Dispatcher dispatcher = null, Func<Task> coroutine = null, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Retrieves or creates a coroutine scope for the given dispatcher.
+        /// </summary>
+        /// <param name="dispatcher">The dispatcher context for the scope. If null, uses the default dispatcher.</param>
+        /// <returns>The coroutine scope associated with the dispatcher.</returns>
+        private static CoroutineScope GetOrCreateScope(Dispatcher dispatcher)
         {
-            dispatcher = dispatcher ?? Dispatcher.Default;
-            if (coroutine == null)
+            return Scopes.GetOrAdd(dispatcher ?? Dispatcher.Default, d => new CoroutineScope(d));
+        }
+
+        /// <summary>
+        /// Launches a coroutine that takes no parameters and returns no value.
+        /// </summary>
+        /// <param name="coroutine">The coroutine to launch.</param>
+        /// <param name="dispatcher">The dispatcher where the coroutine will run. If null, the default dispatcher is used.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the coroutine.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if the coroutine is null.</exception>
+        public static async Task Launch(Action coroutine, Dispatcher dispatcher = null, CancellationToken cancellationToken = default)
+        {
+            if (coroutine == null) throw new ArgumentNullException(nameof(coroutine));
+
+            var scope = GetOrCreateScope(dispatcher);
+            try
             {
-                throw new ArgumentNullException(nameof(coroutine));
+                await scope.Launch(coroutine, dispatcher);
             }
-            else
+            catch (Exception ex)
             {
-                var scope = Scopes.GetOrAdd(dispatcher, new CoroutineScope(dispatcher));
-                try
-                {
-                    await scope.Launch(coroutine);
-                }
-                catch (Exception ex)
-                {
-                    CoroutineExceptionHandler.Handle(ex);
-                }
+                CoroutineExceptionHandler.Handle(ex);
             }
         }
 
-        public static async Task Combine(Dispatcher dispatcher = null, IEnumerable<Func<Task>> coroutines = null, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Launches a coroutine that takes a value and returns that value.
+        /// </summary>
+        /// <param name="coroutine">The coroutine to launch.</param>
+        /// <param name="dispatcher">The dispatcher where the coroutine will run. If null, the default dispatcher is used.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the coroutine.</param>
+        /// <returns>A task representing the asynchronous operation that will return the result of the coroutine.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if the coroutine is null.</exception>
+        public static async Task Launch<T>(Func<T> coroutine, Dispatcher dispatcher = null, CancellationToken cancellationToken = default)
         {
-            dispatcher = dispatcher ?? Dispatcher.Default;
-            if (coroutines == null)
+            if (coroutine == null) throw new ArgumentNullException(nameof(coroutine));
+
+            var scope = GetOrCreateScope(dispatcher);
+            try
             {
-                throw new ArgumentNullException(nameof(coroutines));
+                await scope.Launch(coroutine, dispatcher);
             }
-            else
+            catch (Exception ex)
             {
-                var scope = Scopes.GetOrAdd(dispatcher, new CoroutineScope(dispatcher));
-                try
-                {
-                    await scope.Combine(coroutines);
-                }
-                catch (Exception ex)
-                {
-                    CoroutineExceptionHandler.Handle(ex);
-                }
+                CoroutineExceptionHandler.Handle(ex);
             }
         }
 
+        /// <summary>
+        /// Launches a coroutine that returns a <see cref="Task"/> and waits for its completion.
+        /// </summary>
+        /// <param name="coroutine">The coroutine to launch.</param>
+        /// <param name="dispatcher">The dispatcher where the coroutine will run. If null, the default dispatcher is used.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the coroutine.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if the coroutine is null.</exception>
+        public static async Task Launch(Func<Task> coroutine, Dispatcher dispatcher = null, CancellationToken cancellationToken = default)
+        {
+            if (coroutine == null) throw new ArgumentNullException(nameof(coroutine));
+
+            var scope = GetOrCreateScope(dispatcher);
+            try
+            {
+                await scope.Launch(coroutine, dispatcher);
+            }
+            catch (Exception ex)
+            {
+                CoroutineExceptionHandler.Handle(ex);
+            }
+        }
+
+        /// <summary>
+        /// Combines multiple coroutines that take no parameters and runs them in parallel.
+        /// </summary>
+        /// <param name="coroutines">The collection of coroutines to execute.</param>
+        /// <param name="dispatcher">The dispatcher where the coroutines will run. If null, the default dispatcher is used.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the coroutines.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if the coroutines collection is null.</exception>
+        public static async Task Combine(IEnumerable<Action> coroutines, Dispatcher dispatcher = null, CancellationToken cancellationToken = default)
+        {
+            if (coroutines == null) throw new ArgumentNullException(nameof(coroutines));
+
+            var scope = GetOrCreateScope(dispatcher);
+            try
+            {
+                await scope.Combine(coroutines, dispatcher);
+            }
+            catch (Exception ex)
+            {
+                CoroutineExceptionHandler.Handle(ex);
+            }
+        }
+
+        /// <summary>
+        /// Combines multiple coroutines that take a value and runs them in parallel.
+        /// </summary>
+        /// <param name="coroutines">The collection of coroutines to execute.</param>
+        /// <param name="dispatcher">The dispatcher where the coroutines will run. If null, the default dispatcher is used.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the coroutines.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if the coroutines collection is null.</exception>
+        public static async Task Combine<T>(IEnumerable<Func<T>> coroutines, Dispatcher dispatcher = null, CancellationToken cancellationToken = default)
+        {
+            if (coroutines == null) throw new ArgumentNullException(nameof(coroutines));
+
+            var scope = GetOrCreateScope(dispatcher);
+            try
+            {
+                await scope.Combine(coroutines, dispatcher);
+            }
+            catch (Exception ex)
+            {
+                CoroutineExceptionHandler.Handle(ex);
+            }
+        }
+
+        /// <summary>
+        /// Combines multiple coroutines that return a <see cref="Task"/> and runs them in parallel.
+        /// </summary>
+        /// <param name="coroutines">The collection of coroutines to execute.</param>
+        /// <param name="dispatcher">The dispatcher where the coroutines will run. If null, the default dispatcher is used.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the coroutines.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if the coroutines collection is null.</exception>
+        public static async Task Combine(IEnumerable<Func<Task>> coroutines, Dispatcher dispatcher = null, CancellationToken cancellationToken = default)
+        {
+            if (coroutines == null) throw new ArgumentNullException(nameof(coroutines));
+
+            var scope = GetOrCreateScope(dispatcher);
+            try
+            {
+                await scope.Combine(coroutines, dispatcher);
+            }
+            catch (Exception ex)
+            {
+                CoroutineExceptionHandler.Handle(ex);
+            }
+        }
+
+        /// <summary>
+        /// Combines multiple coroutines and executes the first one to complete.
+        /// </summary>
+        /// <param name="coroutines">The collection of coroutines to execute.</param>
+        /// <param name="dispatcher">The dispatcher where the coroutines will run. If null, the default dispatcher is used.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the coroutines.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if the coroutines collection is null.</exception>
+        public static async Task CombineFirst(IEnumerable<Action> coroutines, Dispatcher dispatcher = null, CancellationToken cancellationToken = default)
+        {
+            if (coroutines == null) throw new ArgumentNullException(nameof(coroutines));
+
+            var scope = GetOrCreateScope(dispatcher);
+            try
+            {
+                await scope.CombineFirst(coroutines, dispatcher);
+            }
+            catch (Exception ex)
+            {
+                CoroutineExceptionHandler.Handle(ex);
+            }
+        }
+
+        /// <summary>
+        /// Combines multiple coroutines that return a <see cref="Task"/> and executes the first one to complete.
+        /// </summary>
+        /// <param name="coroutines">The collection of coroutines to execute.</param>
+        /// <param name="dispatcher">The dispatcher where the coroutines will run. If null, the default dispatcher is used.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the coroutines.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if the coroutines collection is null.</exception>
+        public static async Task CombineFirst(IEnumerable<Func<Task>> coroutines, Dispatcher dispatcher = null, CancellationToken cancellationToken = default)
+        {
+            if (coroutines == null) throw new ArgumentNullException(nameof(coroutines));
+
+            var scope = GetOrCreateScope(dispatcher);
+            try
+            {
+                await scope.CombineFirst(coroutines, dispatcher);
+            }
+            catch (Exception ex)
+            {
+                CoroutineExceptionHandler.Handle(ex);
+            }
+        }
+
+        /// <summary>
+        /// Waits for all coroutines to complete in the global scope.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token to cancel the waiting process.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public static async Task WaitAllAsync(CancellationToken cancellationToken = default)
         {
             var tasks = Scopes.Values.SelectMany(scope => scope.GetTasks(cancellationToken)).ToList();
@@ -69,31 +229,28 @@ namespace Coroutines
             }
         }
 
-        public static async Task CombineFirstAsync(Dispatcher dispatcher = null, IEnumerable<Func<Task>> coroutines = null, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Cancels all coroutines in the global scope.
+        /// </summary>
+        public static void CancelAll()
         {
-            dispatcher = dispatcher ?? Dispatcher.Default;
-            if (coroutines == null)
+            foreach (var scope in Scopes.Values)
             {
-                throw new ArgumentNullException(nameof(coroutines));
-            }
-            else
-            {
-                var scope = Scopes.GetOrAdd(dispatcher, new CoroutineScope(dispatcher));
-                try
-                {
-                    await scope.CombineFirst(coroutines.ToArray());
-                }
-                catch (Exception ex)
-                {
-                    CoroutineExceptionHandler.Handle(ex);
-                }
+                scope.Cancel();
             }
         }
 
-        public static async Task<IEnumerable<Task>> GetTasks(CancellationToken cancellationToken)
+        /// <summary>
+        /// Disposes of all coroutine scopes in the global scope asynchronously.
+        /// </summary>
+        /// <returns>A task representing the asynchronous disposal operation.</returns>
+        public static async Task DisposeAllAsync()
         {
-            var tasks = Scopes.Values.SelectMany(scope => scope.GetTasks(cancellationToken)).ToList();
-            return tasks;
+            foreach (var scope in Scopes.Values)
+            {
+                await scope.DisposeAsync();
+            }
         }
     }
 }
+

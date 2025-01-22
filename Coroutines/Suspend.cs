@@ -5,63 +5,66 @@ namespace Coroutines
 {
     public static class Suspend
     {
-        public static async Task Delay(int milliseconds)
+        /// <summary>
+        /// Suspends the coroutine for a specified duration.
+        /// </summary>
+        /// <param name="duration">The amount of time to suspend the coroutine.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if the <paramref name="duration"/> is negative.</exception>
+        public static async Task For(TimeSpan duration)
         {
-            try
-            {
-                await Task.Delay(milliseconds);
-            }
-            catch (Exception ex)
-            {
-                throw new CoroutineExecutionException("Error during delay suspension.", ex);
-            }
+            if (duration < TimeSpan.Zero)
+                throw new ArgumentOutOfRangeException(nameof(duration), "Duration cannot be negative.");
+
+            await Task.Delay(duration);
         }
 
-        public static async Task<T> From<T>(Func<Task<T>> function)
+        /// <summary>
+        /// Suspends the coroutine for a specified number of milliseconds.
+        /// </summary>
+        /// <param name="milliseconds">The number of milliseconds to suspend the coroutine.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if the <paramref name="milliseconds"/> is negative.</exception>
+        public static async Task ForMilliseconds(int milliseconds)
         {
-            try
-            {
-                return await function();
-            }
-            catch (Exception ex)
-            {
-                throw new CoroutineExecutionException("Error during From suspension.", ex);
-            }
+            if (milliseconds < 0)
+                throw new ArgumentOutOfRangeException(nameof(milliseconds), "Milliseconds cannot be negative.");
+
+            await Task.Delay(milliseconds);
         }
 
-        public static async Task SuspendWith(Func<Task> action)
+        /// <summary>
+        /// Suspends the coroutine for a specified number of seconds.
+        /// </summary>
+        /// <param name="seconds">The number of seconds to suspend the coroutine.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if the <paramref name="seconds"/> is negative.</exception>
+        public static async Task ForSeconds(int seconds)
         {
-            try
-            {
-                await action();
-            }
-            catch (Exception ex)
-            {
-                throw new CoroutineExecutionException("Error during SuspendWith action.", ex);
-            }
+            if (seconds < 0)
+                throw new ArgumentOutOfRangeException(nameof(seconds), "Seconds cannot be negative.");
+
+            await Task.Delay(TimeSpan.FromSeconds(seconds));
         }
 
-        public static async Task<T> Await<T>(Task<T> task)
+        /// <summary>
+        /// Suspends the coroutine until a given condition is met.
+        /// </summary>
+        /// <param name="condition">A function that returns a boolean indicating whether the condition is met.</param>
+        /// <param name="checkIntervalMilliseconds">The interval (in milliseconds) to check the condition. Default is 100 ms.</param>
+        /// <param name="timeoutMilliseconds">The maximum time to wait for the condition to be met, in milliseconds. 
+        /// A value of -1 means no timeout. Default is -1.</param>
+        /// <exception cref="ArgumentNullException">Thrown if the <paramref name="condition"/> is null.</exception>
+        /// <exception cref="TimeoutException">Thrown if the condition is not met within the specified timeout.</exception>
+        public static async Task Until(Func<bool> condition, int checkIntervalMilliseconds = 100, int timeoutMilliseconds = -1)
         {
-            try
-            {
-                return await task;
-            }
-            catch (Exception ex)
-            {
-                throw new CoroutineExecutionException("Error awaiting task.", ex);
-            }
-        }
+            if (condition == null)
+                throw new ArgumentNullException(nameof(condition));
 
-        public static async Task Await(Task task)
-        {
-            try
+            var startTime = DateTime.UtcNow;
+            while (!condition())
             {
-                await task;
-            }
-            catch (Exception ex)
-            {
-                throw new CoroutineExecutionException("Error awaiting task.", ex);
+                if (timeoutMilliseconds > 0 && (DateTime.UtcNow - startTime).TotalMilliseconds > timeoutMilliseconds)
+                    throw new TimeoutException("The condition was not met within the specified timeout.");
+
+                await Task.Delay(checkIntervalMilliseconds);
             }
         }
     }
