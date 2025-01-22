@@ -12,6 +12,9 @@
 		<PackageTags>coroutines;async;tasks;kotlin;dispatcher</PackageTags>
 		<RepositoryUrl>https://github.com/styropyr0/Coroutines</RepositoryUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
-
+	<ItemGroup>
+		<None Include="docs\README.md" Pack="true" PackagePath="\"/>
+	</ItemGroup>
 </Project>
