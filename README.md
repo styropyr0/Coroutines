@@ -1,4 +1,4 @@
-# Coroutine Library - Detailed Documentation
+# Coroutine Library for .NET - Detailed Documentation
 
 ## Overview
 
