@@ -22,7 +22,7 @@ This Coroutine Library is a lightweight asynchronous task management system for 
 
 1. Clone or download the repository:
    ```bash
-   git clone https://github.com/yourusername/coroutines.git
+   git clone https://github.com/styropyr0/Coroutines
    ```
 2. Add the source files directly to your project, or compile the library into a `.dll` and reference it in your project.
 
