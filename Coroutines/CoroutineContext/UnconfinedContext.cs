@@ -22,7 +22,8 @@ namespace Coroutines.CoroutineContext
         {
             try
             {
-                await task();
+                // Ensures the task can resume on any thread and doesn't automatically capture the synchronization context.
+                await task().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -42,7 +43,8 @@ namespace Coroutines.CoroutineContext
         {
             try
             {
-                return await task();
+                // Ensures the task can resume on any thread and doesn't automatically capture the synchronization context.
+                return await task().ConfigureAwait(false);
             }
             catch (Exception ex)
             {

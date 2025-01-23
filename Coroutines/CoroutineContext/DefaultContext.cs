@@ -17,16 +17,9 @@ namespace Coroutines.CoroutineContext
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> to cancel the task execution.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
         /// <exception cref="CoroutineExecutionException">Thrown if an error occurs during execution.</exception>
-        public override async Task ExecuteAsync(Func<Task> task, CancellationToken cancellationToken)
+        public override Task ExecuteAsync(Func<Task> task, CancellationToken cancellationToken)
         {
-            try
-            {
-                await task();
-            }
-            catch (Exception ex)
-            {
-                throw new CoroutineExecutionException("Exception in Default Dispatcher execution.", ex);
-            }
+            return Task.Run(task, cancellationToken);
         }
 
         /// <summary>
@@ -37,16 +30,9 @@ namespace Coroutines.CoroutineContext
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> to cancel the task execution.</param>
         /// <returns>A task representing the asynchronous operation, with a result.</returns>
         /// <exception cref="CoroutineExecutionException">Thrown if an error occurs during execution.</exception>
-        public override async Task<T> ExecuteAsync<T>(Func<Task<T>> task, CancellationToken cancellationToken)
+        public override Task<T> ExecuteAsync<T>(Func<Task<T>> task, CancellationToken cancellationToken)
         {
-            try
-            {
-                return await task();
-            }
-            catch (Exception ex)
-            {
-                throw new CoroutineExecutionException("Exception in Default Dispatcher execution.", ex);
-            }
+            return Task.Run(task, cancellationToken);
         }
     }
 }
