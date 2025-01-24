@@ -32,9 +32,13 @@ This coroutine library offers an intuitive and flexible approach to asynchronous
    ```
 2. Add the source files directly to your project, or compile the library into a `.dll` and reference it in your project.
 
-Alternatively, if you prefer to install via NuGet (if the package is made public):
+Alternatively, if you prefer to install via .NET CLI or Package Manager:
 ```bash
-Install-Package CoroutineLibrary
+dotnet add package CoroutinesForCS --version 1.0.0
+```
+
+```bash
+NuGet\Install-Package CoroutinesForCS -Version <version>
 ```
 ---
 
