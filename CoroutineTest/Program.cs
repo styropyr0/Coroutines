@@ -17,12 +17,13 @@ class Program
 
         Stopwatch stopwatch = Stopwatch.StartNew();
 
-        var coroutine1 = async () => { await ModifyMatrix(matrix, 0, 3, "Coroutine 1"); };
-        var coroutine2 = async () => { await ModifyMatrix(matrix, 3, 6, "Coroutine 2"); };
-        var coroutine3 = async () => { await ModifyMatrix(matrix, 6, 8, "Coroutine 3"); };
-        var coroutine4 = async () => { await ModifyMatrix(matrix, 8, 10, "Coroutine 4"); };
-
-        await GlobalScope.Combine(new[] { coroutine1, coroutine2, coroutine3, coroutine4 });
+        await CoroutineBuilder.LaunchAll(
+            new List<Func<Task>>{
+                async () => { await ModifyMatrix(matrix, 0, 3, "Coroutine 1"); },
+                async () => { await ModifyMatrix(matrix, 3, 6, "Coroutine 2"); },
+                async () => { await ModifyMatrix(matrix, 6, 8, "Coroutine 3"); },
+                async () => { await ModifyMatrix(matrix, 8, 10, "Coroutine 4"); }
+            }, Dispatcher.Default);
 
         stopwatch.Stop();
         Console.WriteLine($"Matrix modification completed in {stopwatch.ElapsedMilliseconds} ms.");
