@@ -34,7 +34,7 @@ This coroutine library offers an intuitive and flexible approach to asynchronous
 
 Alternatively, if you prefer to install via .NET CLI or Package Manager:
 ```bash
-dotnet add package CoroutinesForCS --version 1.0.0
+dotnet add package CoroutinesForCS --version <version>
 ```
 
 ```bash
