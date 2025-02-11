@@ -435,7 +435,7 @@ Runs a coroutine that returns a `Task<T>` and applies a timeout. If the coroutin
 
 ### 6. CoroutineScopeWithCancellation
 
-`CoroutineScopeWithCancellation` represents a coroutine scope with cancellation support for all coroutines within the scope. This class allows launching coroutines, waiting for them to complete, and canceling them when needed. If any coroutine in the scope is canceled, all others are also canceled.
+`CoroutineScopeWithCancellation` represents a coroutine scope with cancellation support for all coroutines within the scope. This class allows launching coroutines, waiting for them to complete, and canceling them when needed. If any coroutine in the scope is canceled, all coroutines within it are also canceled.
 
 ### Constructor:
 
